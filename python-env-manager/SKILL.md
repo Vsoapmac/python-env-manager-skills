@@ -1,6 +1,6 @@
 ---
 name: python-env-manager
-description: 在执行任何 Python 相关操作之前使用此 skill。扫描系统上可用的 Python 环境（conda、venv、系统 Python），向用户展示结构化选择菜单，并在整个会话中跟踪所选环境。绝不允许在未经过此选择流程的情况下静默使用系统 Python。
+description: 在你执行python命令前触发该skills。扫描系统上可用的 Python 环境（conda、venv、系统 Python），向用户展示结构化选择菜单，并在整个会话中跟踪所选环境。不要在未经过此选择流程的情况下静默使用系统 Python。
 ---
 
 # Python 环境管理器
