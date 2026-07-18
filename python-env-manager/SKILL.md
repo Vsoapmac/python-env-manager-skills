@@ -1,74 +1,74 @@
 ---
 name: python-env-manager
-description: 在智能体即将执行 "pip install" / "pip3 install" / "python -m "/ "python -u" / "python3 -m" /"python3 -u" 等python相关命令时自动使用--在运行任何python命令时必须加载此技能。或者用户说"安装xxxx"(安装python第三方库)/"运行xxxx"(运行python代码)时使用。子agent不要加载此技能。
+description: Automatically used when the agent is about to execute Python-related commands such as "pip install" / "pip3 install" / "python -m " / "python -u" / "python3 -m" / "python3 -u"—this skill must be loaded before running any Python command. Also used when the user says "安装xxxx" (install a Python third-party package) / "运行xxxx" (run Python code). Subagents must NOT load this skill.
 ---
 
 <SUBAGENT-STOP>
-如果你是作为子智能体被分派来执行特定任务的，跳过此技能。子智能体没有交互界面，无法向用户展示 Python 环境选择菜单，加载此技能无意义。
+If you are a subagent dispatched to perform a specific task, skip this skill. Subagents have no interactive interface and cannot present the Python environment selection menu to the user, so loading this skill is pointless.
 </SUBAGENT-STOP>
 
-## 触发条件
+## Trigger Conditions
 
-当即将执行以下命令时触发：`python`、`python3`、`pip`、`pip3`、`pytest`、`python -m`、`python -c`。
+Triggered when about to execute any of the following commands: `python`, `python3`, `pip`, `pip3`, `pytest`, `python -m`, `python -c`.
 
-## 核心规则
+## Core Rules
 
-1. **绝不跳过。** 首次执行 Python 命令前，必须先完成环境选择。
-2. **记住选择。** 选定后设置 `active_env`，该会话内后续所有 Python 命令直接使用，不再询问。
-3. **切换环境。** 用户说"换环境"或"切换环境"时，清除 `active_env`，重新进入选择流程。
+1. **Never skip.** Before executing a Python command for the first time, environment selection must be completed.
+2. **Remember the choice.** After selection, set `active_env`; all subsequent Python commands in this session use it directly without asking again.
+3. **Switch environments.** When the user says "换环境" (change environment) or "切换环境" (switch environment), clear `active_env` and re-enter the selection flow.
 
-## 扫描环境
+## Scanning Environments
 
-首次触发（或用户切换环境）时，扫描以下三类：
+On first trigger (or when the user switches environments), scan the following three categories:
 
-**Conda：** 执行 `conda env list`，对每个环境获取 `{env_path}/python --version`。若 conda 不可用则跳过。
+**Conda:** Run `conda env list`, and for each environment get `{env_path}/python --version`. Skip if conda is unavailable.
 
-**Venv：** 搜索工作区 `**/pyvenv.cfg`，父目录即为 venv 路径，同样获取 Python 版本。
+**Venv:** Search the workspace for `**/pyvenv.cfg`; the parent directory is the venv path. Get the Python version the same way.
 
-**系统 Python：** 执行 `python --version` 和 `which python`（Windows: `where python`）。若不存在则停止并报错。
+**System Python:** Run `python --version` and `which python` (Windows: `where python`). If none exists, stop and report an error.
 
-## 推荐与菜单
+## Recommendation and Menu
 
-推荐优先级：项目下 `.venv` > 项目名匹配的 conda 环境 > 非 base conda 环境 > 系统 Python。
+Recommendation priority: `.venv` under the project > conda environment matching the project name > non-base conda environment > system Python.
 
-菜单格式：
+Menu format:
 
 ```
-请选择 Python 环境：
+Please select a Python environment:
 
-[A] Conda 环境：
+[A] Conda environments:
     * base (Python 3.11.5)
     * myproject (Python 3.10.8)
 
-[B] venv 虚拟环境：
+[B] venv virtual environments:
     * .\.venv (Python 3.12.0)
 
-[C] 系统 Python：
+[C] System Python:
     Python 3.11.5 @ C:\Python311\
 
-推荐：[B] .\.venv —— 项目目录下存在 .venv
+Recommended: [B] .\.venv —— .venv exists in the project directory
 ```
 
-不可用项标注 `[X] xxx 不可用`。推荐项标注推荐理由。
+Mark unavailable items as `[X] xxx unavailable`. Annotate the recommended item with the reason for recommendation.
 
-## 输入解析
+## Input Parsing
 
-| 输入 | 含义 |
+| Input | Meaning |
 |------|------|
-| `A <name>` | 对应名称的 conda 环境 |
-| `B <序号/路径>` | 第 N 个 venv 或指定路径的 venv |
-| `C` | 系统 Python |
-| `/abs/path/python` | 自定义解释器路径 |
+| `A <name>` | The conda environment with that name |
+| `B <index/path>` | The Nth venv, or the venv at the given path |
+| `C` | System Python |
+| `/abs/path/python` | Custom interpreter path |
 
-验证路径存在且可执行，无效则提示重新选择。
+Verify the path exists and is executable; if invalid, prompt for re-selection.
 
-## 激活使用
+## Activation and Usage
 
-选定后保存 `active_env = {type, name, python_path}`。后续命令使用绝对路径：
+After selection, save `active_env = {type, name, python_path}`. Subsequent commands use absolute paths:
 
 - conda: `{conda_prefix}/envs/{name}/python`
-- venv: `{venv_path}/Scripts/python`（Win）或 `{venv_path}/bin/python`
-- 系统: `python`
-- 自定义: 用户指定路径
+- venv: `{venv_path}/Scripts/python` (Win) or `{venv_path}/bin/python`
+- system: `python`
+- custom: the user-specified path
 
-pip 统一用 `{python_path} -m pip`。每次执行前简要提示当前环境。
+For pip, always use `{python_path} -m pip`. Briefly indicate the current environment before each execution.
